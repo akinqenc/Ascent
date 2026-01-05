@@ -1,0 +1,177 @@
+const {
+    Client,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    EmbedBuilder,
+} = require("discord.js");
+const {
+    Connect4,
+    RockPaperScissors,
+    TicTacToe,
+} = require('discord-gamecord');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName("games-multiplayer")
+        .setDescription("Seçtiğin bir üye ile yyun oyna")
+        .addStringOption(option =>
+            option.setName("game")
+                .setDescription("*Oyun seç")
+                .setRequired(true)
+                .addChoices(
+                    { name: "Connect-4", value: "connect4" },
+                    { name: "Taş-Kağıt-Makas", value: "rps" },
+                    { name: "X-O-X", value: "tictactoe" },
+                )
+        )
+        .addUserOption(option =>
+            option.setName("user")
+                .setDescription('*Rakibini seç')
+                .setRequired(true)
+        )
+        .setDMPermission(false),
+    /**
+     * @param {Client} client
+     * @param {ChatInputCommandInteraction} interaction
+     */
+    async execute(interaction) {
+        const game = interaction.options.getString("game");
+        const user = interaction.options.getUser("user");
+
+        if (!user) {
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("0x2f3136")
+                        .setDescription(":warning: | Belirtilen hedef büyük olasılıkla sunucudan ayrıldı.")
+                ],
+                ephemeral: true
+            })
+        }
+
+        if (user.bot) {
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("0x2f3136")
+                        .setDescription(":warning: | Botla oynayamazsın")
+                ],
+                ephemeral: true
+            })
+        }
+
+        if (user.id === interaction.user.id) {
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("0x2f3136")
+                        .setDescription(":warning: | Kendinle oynayamazsın")
+                ],
+                ephemeral: true
+            })
+        }
+
+        switch (game) {
+            case "connect4": {
+                const Game = new Connect4({
+                    message: interaction,
+                    slash_command: true,
+                    opponent: interaction.options.getUser('user'),
+                    embed: {
+                        title: 'Connect4 Game',
+                        statusTitle: 'Status',
+                        color: '#2f3136'
+                    },
+                    emojis: {
+                        board: '⚪',
+                        player1: '🔴',
+                        player2: '🟡'
+                    },
+                    mentionUser: true,
+                    timeoutTime: 60000,
+                    buttonStyle: 'PRIMARY',
+                    turnMessage: '{emoji} | **{player}** üyesinin sırası.',
+                    winMessage: '{emoji} | **{player}** Connect4 oyununu kazandı.',
+                    tieMessage: 'Beraberlik',
+                    timeoutMessage: 'Oyun bitmedi. Kazanan yok.',
+                    playerOnlyMessage: 'Sadece {player} ve {opponent} butonları kullanabilir.' 
+                });
+
+                Game.startGame();
+                Game.on('gameOver', result => {
+                    console.log(result);  // =>  { result... }
+                });
+            }
+                break;
+            case "rps": {
+                const Game = new RockPaperScissors({
+                    message: interaction,
+                    slash_command: true,
+                    opponent: interaction.options.getUser('user'),
+                    embed: {
+                        title: 'Taş Kağıt Makas',
+                        color: '#2f3136',
+                        description: 'Seçmek istediğin butona tıkla.'
+                    },
+                    buttons: {
+                        rock: 'Taş',
+                        paper: 'Kağıt',
+                        scissors: 'Makas'
+                    },
+                    emojis: {
+                        rock: '🌑',
+                        paper: '📰',
+                        scissors: '✂️'
+                    },
+                    mentionUser: true,
+                    timeoutTime: 60000,
+                    buttonStyle: 'PRIMARY',
+                    pickMessage: 'You choose {emoji}.',
+                    winMessage: '**{player}**',
+                    tieMessage: 'Beraberlik',
+                    timeoutMessage: 'Oyun bitmedi. Kazanan yok.',
+                    playerOnlyMessage: 'Sadece {player} ve {opponent} butonları kullanabilir.'
+                });
+
+                Game.startGame();
+                Game.on('gameOver', result => {
+                    console.log(result);  // =>  { result... }
+                });
+            }
+                break;
+            case "tictactoe": {
+                const Game = new TicTacToe({
+                    message: interaction,
+                    slash_command: true,
+                    opponent: interaction.options.getUser('user'),
+                    embed: {
+                        title: 'Tic Tac Toe',
+                        color: '#2f3136',
+                        statusTitle: 'Durum',
+                        overTitle: 'Oyun Bitti'
+                    },
+                    emojis: {
+                        xButton: '❌',
+                        oButton: '🔵',
+                        blankButton: '➖'
+                    },
+                    mentionUser: true,
+                    timeoutTime: 60000,
+                    xButtonStyle: 'DANGER',
+                    oButtonStyle: 'PRIMARY',
+                    turnMessage: '{emoji} | Its turn of player **{player}**.',
+                    winMessage: '{emoji} | **{player}** won the TicTacToe Game.',
+                    tieMessage: 'The Game tied! No one won the Game!',
+                    timeoutMessage: 'The Game went unfinished! No one won the Game!',
+                    playerOnlyMessage: 'Only {player} and {opponent} can use these buttons.'
+                });
+
+                Game.startGame();
+                Game.on('gameOver', result => {
+                    console.log(result);  // =>  { result... }
+                })
+            }
+                break;
+        }
+    }
+}
